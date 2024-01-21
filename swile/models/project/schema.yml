@@ -1,0 +1,57 @@
+
+version: 2
+
+sources:
+  - name: swile
+    database: swile
+    schema: public  
+    tables:
+      - name: transaction
+        description: "model to save the transactions"
+        columns:
+          - name: id
+            description: "id from the transaction"
+            tests:
+              - unique
+              - not_null
+          - name: type
+            description: "always a 'payment'"
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['payment']
+          - name: amount
+            description: "in Euros"
+            tests:
+              - not_null
+          - name: status
+            description: "can be: captured, declined, refunded"
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['captured', 'declined', 'refunded']
+          - name: created_at
+            description: "iso datetime string like: 2023-10-02T07:49:43Z"
+            tests:
+              - not_null
+          - name: wallet_id
+            description: "a Swile account id"
+            tests:
+              - not_null
+          - name: siret
+            description: "siret number"
+            tests:
+              - not_null
+
+      - name: shop
+        description: "A starter dbt model"
+        columns:
+          - name: siret
+            description: "The primary key for this table"
+            tests:
+              - unique
+              - not_null
+          - name: naf_code
+            description: "NAF code from INSEE in NAFRev2 format"
+            tests:
+              - not_null

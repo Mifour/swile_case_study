@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: swile
+    tables:
+      - name: raw_transactions
+        meta:
+          dagster:
+            asset_key: ["raw_transactions"]
+      - name: raw_shops
+        meta:
+          dagster:
+            asset_key: ["raw_shops"]
