@@ -1,7 +1,7 @@
 # Welcome to my swile case study
 
-## pre-requisite:
-- having a running docker-compose environnment
+## prerequisite:
+- having a running docker-compose environment
 
 ## instructions:
 run:  
@@ -18,7 +18,7 @@ The pipeline can be a bit long, it is a good idea to keep the Minio connected by
   
 After the pipeline succeeded, there should be a resulting CSV file called "export.csv" onto the Minio bucket.
 
-## Improvments:
+## Improvements:
 Here's some possible ameliorations to continue this project even further:
 - having unit tests
 - having a CI/CD pipeline with github actions or Gitlab CI
