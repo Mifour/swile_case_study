@@ -1,9 +1,13 @@
 version: "3.8"
 
 x-minio-common: &minio-common
-  environment:
-    MINIO_ROOT_USER: minio
-    MINIO_ROOT_PASSWORD: password
+  MINIO_ROOT_USER: minio
+  MINIO_ROOT_PASSWORD: password
+
+x-dagster-common: &dagster-common
+  DAGSTER_POSTGRES_USER: "swile_writer_user"
+  DAGSTER_POSTGRES_PASSWORD: "password"
+  DAGSTER_POSTGRES_DB: "swile"
 
 services:
   minio:
@@ -17,7 +21,8 @@ services:
     ports:
       - 9000:9000
       - 9001:9001
-    <<: *minio-common
+    environment:
+      <<: *minio-common
     command: 'minio server /data --console-address ":9001"'
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
@@ -28,7 +33,8 @@ services:
   mc:
     image: minio/mc:latest
     container_name: minio-init
-    <<: *minio-common
+    environment:
+      <<: *minio-common
     depends_on:
       minio:
         condition: service_healthy
@@ -37,11 +43,15 @@ services:
       - ./transactions:/tmp/transactions
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set swile-minio http://minio-container:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
-      /usr/bin/mc mb swile-minio/transactions;
-      /usr/bin/mc anonymous set public swile-minio/transactions;
-      /usr/bin/mc cp --recursive /tmp/transactions swile-minio/
+      /usr/bin/mc alias set bucket http://minio:9000 minio password;
+      /usr/bin/mc mb bucket/transactions;
+      /usr/bin/mc anonymous set public bucket/transactions;
+      /usr/bin/mc cp --recursive /tmp/transactions bucket/transactions;
+      echo 'finished uploading files to S3';
       "
+    networks:
+      - docker_network
+
   postgres:
     image: postgres:16-alpine
     expose:
@@ -65,13 +75,9 @@ services:
     image: docker_swile_app_image
     restart: always
     environment:
+      <<: [*minio-common, *dagster-common]
       MINIO_HOST: minio
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: password
       POSTGRES_HOSTNAME: postgres
-      DAGSTER_POSTGRES_USER: "swile_writer_user"
-      DAGSTER_POSTGRES_PASSWORD: "password"
-      DAGSTER_POSTGRES_DB: "swile"
       DAGSTER_CURRENT_IMAGE: "swile_app_image"
       INSEE_CONSUMER_KEY: "RRLpHph_qqLVFvW5kdSHfD0pV3Ua"
       INSEE_CONSUMER_SECRET: "GCyMzihpqXe3FEzmOxrY81rfHA4a"
@@ -103,9 +109,7 @@ services:
     environment:
       hostname: postgres
       ENV DAGSTER_DBT_PARSE_PROJECT_ON_LOAD: "1"
-      DAGSTER_POSTGRES_USER: "swile_writer_user"
-      DAGSTER_POSTGRES_PASSWORD: "password"
-      DAGSTER_POSTGRES_DB: "swile"
+      <<: *dagster-common
     volumes: # Make docker client accessible so we can terminate containers from the webserver
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/io_manager_storage:/tmp/io_manager_storage
@@ -126,9 +130,7 @@ services:
     restart: on-failure
     environment:
       hostname: postgres
-      DAGSTER_POSTGRES_USER: "swile_writer_user"
-      DAGSTER_POSTGRES_PASSWORD: "password"
-      DAGSTER_POSTGRES_DB: "swile"
+      <<: *dagster-common
     volumes: # Make docker client accessible so we can launch containers using host docker
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/io_manager_storage:/tmp/io_manager_storage

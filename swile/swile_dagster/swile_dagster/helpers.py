@@ -34,13 +34,13 @@ def create_table_if_not_exists(engine: Engine, context: AssetExecutionContext):
 
 
 def check_bucket_exists(client: Minio):
-    if not client.bucket_exists("bucket"):
-        raise ValueError("Bucket 'bucket' does not exist.")
+    if not client.bucket_exists("transactions"):
+        raise ValueError("Bucket 'transactions' does not exist.")
 
 
 def list_s3_files(client: Minio) -> list[str]:
     check_bucket_exists(client)
-    return [obj.object_name for obj in client.list_objects("bucket", "transactions/")]
+    return [obj.object_name for obj in client.list_objects("transactions", "transactions/")]
 
 
 def get_insee_headers(context: AssetExecutionContext) -> dict[str, str]:

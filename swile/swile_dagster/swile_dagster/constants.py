@@ -35,6 +35,8 @@ MINIO_CONF = {
     "access_key": os.getenv("MINIO_ROOT_USER"),
     "secret_key": os.getenv("MINIO_ROOT_PASSWORD"),
 }
+MINIO_BUCKET_NAME = "bucket"
+MINIO_TRANSACTION_FOLDER_PATH = "transactions/"
 
 # Postgres connection
 DAGSTER_POSTGRES_HOSTNAME = os.getenv("POSTGRES_HOSTNAME")

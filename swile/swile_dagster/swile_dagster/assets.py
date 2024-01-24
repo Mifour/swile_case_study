@@ -37,7 +37,7 @@ def raw_transactions(context: AssetExecutionContext) -> None:
     with Session.begin() as session:
         try:
             for file_name in list_s3_files(minio_client):
-                response = minio_client.get_object("bucket", file_name)
+                response = minio_client.get_object("transactions", file_name)
                 rows = []
                 for t in json.loads(response.data.decode()):
                     if Transaction(**t).validate_values():
@@ -105,7 +105,7 @@ def export_to_csv(context: AssetExecutionContext):
 
     content = b"\n".join(rows)
     minio_client.put_object(
-        "bucket",
+        "transactions",
         "export.csv",
         io.BytesIO(content),
         len(content),
