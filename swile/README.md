@@ -7,9 +7,8 @@
 run:  
 `sudo docker compose up -d`
   
-after seeing the containers being created, go to http://localhost:9001/ (username: minio, password: password) to connect to the Minio server.  
-  
-create a new bucket called "bucket" and upload the folder transactions.  
+after seeing the containers being created, you can go to http://localhost:9001/ (username: minio, password: password) to connect to the Minio server. And see that the data has been upload.  
+    
 The result should be bucket "bucket" containing a folder "transactions" containing the json files.  
   
 Go to http://localhost:3000/asset-groups , a dag of 4 jobs should already be present.  
