@@ -1,4 +1,4 @@
-FROM python:3.11-alpine
+FROM python:3.11-bookworm
 
 # Checkout and install dagster libraries needed to run the gRPC server
 # exposing your repository to dagster-webserver and dagster-daemon, and to load the DagsterInstance
@@ -8,6 +8,7 @@ RUN pip install \
     dagster \
     dagster-cloud \
     dagster-dbt \
+    dagster-postgres \
     dbt-core\
     dagster-docker \
     dbt-postgres \
@@ -19,9 +20,7 @@ RUN pip install \
 
 WORKDIR /opt/dagster/app
 
-#COPY repo.py /opt/dagster/app
 COPY . /opt/dagster/app
-#COPY . .
 
 WORKDIR /opt/dagster/app/swile_dagster
 
@@ -29,10 +28,4 @@ WORKDIR /opt/dagster/app/swile_dagster
 
 EXPOSE 4000
 
-ENV DAGSTER_DBT_PARSE_PROJECT_ON_LOAD=1
-
-# CMD allows this to be overridden from run launchers or executors that want
-# to run other commands against your repository
-# CMD ["dagster", "api", "grpc", "-h", "0.0.0.0", "-p", "4000", "-f", "repo.py"]
-CMD ["dagster", "api", "grpc", "-h", "0.0.0.0", "-p", "4000"]
-# CMD ["DAGSTER_DBT_PARSE_PROJECT_ON_LOAD=1", "dagster", "dev"]
+CMD ["dagster", "api", "grpc", "-h", "0.0.0.0", "-p", "4000", "-f", "swile_dagster/definitions.py"]

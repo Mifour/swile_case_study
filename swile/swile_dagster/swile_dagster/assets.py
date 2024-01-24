@@ -9,20 +9,21 @@ from minio import Minio
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import sessionmaker
 
-from .constants import MINIO_CONF, POSTGRES_CONNECTION, dbt_manifest_path
-from .helpers import (
+from swile_dagster.constants import MINIO_CONF, POSTGRES_CONNECTION, dbt_manifest_path, dbt_project_dir
+from swile_dagster.helpers import (
     check_bucket_exists,
     create_table_if_not_exists,
     get_insee_headers,
     get_naf_code,
     list_s3_files,
 )
-from .sa_models import Shop, Transaction
+from swile_dagster.sa_models import Shop, Transaction
 
 
 @dbt_assets(manifest=dbt_manifest_path)
 def swile_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
-    yield from dbt.cli(["build"], context=context).stream()
+    context.log.info(f"reading manifest at {dbt_manifest_path}")
+    yield from dbt.cli(["build"], context=context, target_path=dbt_project_dir).stream()
 
 
 @asset(compute_kind="python")
@@ -61,7 +62,7 @@ def raw_shops(context: AssetExecutionContext) -> None:
     engine = sqla.create_engine(POSTGRES_CONNECTION)
     create_table_if_not_exists(engine, context)
     Session = sessionmaker(engine)
-    headers = get_insee_headers()
+    headers = get_insee_headers(context)
 
     with Session.begin() as session:
         # fetch only the NAF codes we need
@@ -72,7 +73,7 @@ def raw_shops(context: AssetExecutionContext) -> None:
         ).partitions(100):
             for row in chunk:
                 siret = int(row[0])
-                if naf_code := get_naf_code(siret, context):
+                if naf_code := get_naf_code(siret, context, headers):
                     session.execute(
                         insert(Shop).on_conflict_do_nothing(),
                         [{"siret": siret, "naf_code": naf_code}],
@@ -96,7 +97,7 @@ def export_to_csv(context: AssetExecutionContext):
     with engine.connect() as connection:
         for row in connection.execute(
             sqla.text(
-                """select _date as "date", naf_code, spent from default_public.daily_spent_per_naf_code order by 1, 2;"""
+                """select _date as "date", naf_code, spent from public.daily_spent_per_naf_code order by 1, 2;"""
             )
         ):
             rows.append(b",".join([str(value).encode() for value in row]))

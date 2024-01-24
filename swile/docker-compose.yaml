@@ -9,6 +9,11 @@ services:
   minio:
     image: minio/minio:latest
     container_name: minio-container
+    networks:
+      - docker_network
+    expose:
+      - "9000"
+      - "9001"
     ports:
       - 9000:9000
       - 9001:9001
@@ -39,6 +44,8 @@ services:
       "
   postgres:
     image: postgres:16-alpine
+    expose:
+      - "5432"
     ports:
       - 5432:5432
     volumes:
@@ -49,24 +56,26 @@ services:
       - POSTGRES_DB=swile
     networks:
       - docker_network
-  # This service runs the gRPC server that loads your user code, in both dagster-webserver
-  # and dagster-daemon. By setting DAGSTER_CURRENT_IMAGE to its own image, we tell the
-  # run launcher to use this same image when launching runs in a new container as well.
-  # Multiple containers like this can be deployed separately - each just needs to run on
-  # its own port, and have its own entry in the workspace.yaml file that's loaded by the
-      # webserver.
+
   docker_swile_app:
     build:
       context: .
-      dockerfile: ./dockerfile
+      dockerfile: ./Dockerfile
     container_name: docker_swile_app
     image: docker_swile_app_image
     restart: always
     environment:
+      MINIO_HOST: minio
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: password
+      POSTGRES_HOSTNAME: postgres
       DAGSTER_POSTGRES_USER: "swile_writer_user"
       DAGSTER_POSTGRES_PASSWORD: "password"
       DAGSTER_POSTGRES_DB: "swile"
       DAGSTER_CURRENT_IMAGE: "swile_app_image"
+      INSEE_CONSUMER_KEY: "RRLpHph_qqLVFvW5kdSHfD0pV3Ua"
+      INSEE_CONSUMER_SECRET: "GCyMzihpqXe3FEzmOxrY81rfHA4a"
+      DAGSTER_DBT_PARSE_PROJECT_ON_LOAD: "1"
     expose:
       - "4000"
     ports:
@@ -74,9 +83,6 @@ services:
     networks:
       - docker_network
 
-  # This service runs dagster-webserver, which loads your user code from the user code container.
-  # Since our instance uses the QueuedRunCoordinator, any runs submitted from the webserver will be put on
-  # a queue and later dequeued and launched by dagster-daemon.
   dagster_webserver:
     build:
       context: .
@@ -95,6 +101,7 @@ services:
     ports:
       - "3000:3000"
     environment:
+      hostname: postgres
       ENV DAGSTER_DBT_PARSE_PROJECT_ON_LOAD: "1"
       DAGSTER_POSTGRES_USER: "swile_writer_user"
       DAGSTER_POSTGRES_PASSWORD: "password"
@@ -108,8 +115,6 @@ services:
       - postgres
       - docker_swile_app
 
-  # This service runs the dagster-daemon process, which is responsible for taking runs
-  # off of the queue and launching them, as well as creating runs from schedules or sensors.
   dagster_daemon:
     build:
       context: .
@@ -120,6 +125,7 @@ services:
     container_name: dagster_daemon
     restart: on-failure
     environment:
+      hostname: postgres
       DAGSTER_POSTGRES_USER: "swile_writer_user"
       DAGSTER_POSTGRES_PASSWORD: "password"
       DAGSTER_POSTGRES_DB: "swile"

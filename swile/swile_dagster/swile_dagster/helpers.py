@@ -7,8 +7,8 @@ from minio import Minio
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql import exists, select
 
-from .constants import INSEE_CONSUMER_KEY, INSEE_CONSUMER_SECRET
-from .sa_models import Shop, Transaction
+from swile_dagster.constants import INSEE_CONSUMER_KEY, INSEE_CONSUMER_SECRET
+from swile_dagster.sa_models import Shop, Transaction
 
 
 def create_table_if_not_exists(engine: Engine, context: AssetExecutionContext):
@@ -43,7 +43,8 @@ def list_s3_files(client: Minio) -> list[str]:
     return [obj.object_name for obj in client.list_objects("bucket", "transactions/")]
 
 
-def get_insee_headers() -> dict[str, str]:
+def get_insee_headers(context: AssetExecutionContext) -> dict[str, str]:
+    context.log.info(f"encoding {INSEE_CONSUMER_KEY}:{INSEE_CONSUMER_SECRET}")
     encoded = base64.b64encode(f"{INSEE_CONSUMER_KEY}:{INSEE_CONSUMER_SECRET}".encode())
     response = requests.post(
         "https://api.insee.fr/token",
@@ -56,10 +57,10 @@ def get_insee_headers() -> dict[str, str]:
     return {"Accept": "application/json", "Authorization": f"Bearer {bearer}"}
 
 
-def get_naf_code(siret: int, context: AssetExecutionContext) -> str | None:
+def get_naf_code(siret: int, context: AssetExecutionContext, headers: dict) -> str | None:
     response = requests.get(
         f"https://api.insee.fr/entreprises/sirene/V3/siret/{siret}/",
-        headers=get_insee_headers(),
+        headers=headers,
     )
     if not response.ok:
         context.log.error(response.content)

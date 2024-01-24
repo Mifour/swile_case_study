@@ -1,0 +1,12 @@
+swile:
+  outputs:
+    dev:
+      dbname: "swile"
+      host: "postgres"
+      pass: "password"
+      port: 5432
+      schema: "public"
+      threads: 4
+      type: postgres
+      user: "swile_writer_user"
+  target: dev

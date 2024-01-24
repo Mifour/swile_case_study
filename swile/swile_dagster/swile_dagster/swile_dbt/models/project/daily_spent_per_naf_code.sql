@@ -1,5 +1,4 @@
-{{ config(materialized='materialized_view', schema='public', on_configuration_change = 'apply') }}
--- somehow, the materialized view will stiil be inside the 'default_public' schema
+{{ config(materialized='materialized_view', on_configuration_change = 'apply') }}
 
 with requires_raw_transactions as (
 
