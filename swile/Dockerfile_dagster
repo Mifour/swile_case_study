@@ -1,23 +1,21 @@
 # Dagster libraries to run both dagster-webserver and the dagster-daemon. Does not
 # need to have access to any pipeline code.
 
-FROM python:3.11-alpine
+FROM python:3.11-bookworm
 
 RUN pip install \
     setuptools \
+    "starlette==0.35.1" \
     dagster \
     dagster-graphql \
     dagster-webserver \
-    dagster-postgres \
-    dagster-docker
+    dagster-postgres
 
-# Set $DAGSTER_HOME and copy dagster instance and workspace YAML there
 ENV DAGSTER_HOME=/opt/dagster/dagster_home/
-ENV DAGSTER_DBT_PARSE_PROJECT_ON_LOAD=1
 
 RUN mkdir -p $DAGSTER_HOME
 
-#COPY dagster.yaml workspace.yaml $DAGSTER_HOME
-COPY ./swile_dagster/ $DAGSTER_HOME
+COPY ./swile_dagster/dagster.yaml $DAGSTER_HOME
+COPY ./swile_dagster/workspace.yaml $DAGSTER_HOME
 
-WORKDIR $DAGSTER_HOME
+WORKDIR $DAGSTER_HOME   

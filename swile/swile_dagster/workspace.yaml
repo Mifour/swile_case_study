@@ -3,4 +3,4 @@ load_from:
   - grpc_server:
       host: docker_swile_app
       port: 4000
-      location_name: "0.0.0.0"
+      location_name: "swile_dagster"
